@@ -8,6 +8,11 @@ verify_ssl = true
 [packages]
 pipenv = "*"
 cookiecutter = "*"
+pandas = "*"
+numpy = "*"
+xlrd = "*"
+requests = "*"
+lxml = "*"
 
 [requires]
 python_version = "3.8"
