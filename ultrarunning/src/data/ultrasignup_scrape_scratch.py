@@ -96,6 +96,12 @@ hist_d_id = [*map(get_historical_d_id, data['did'])]
 
 hist_d_id = [item for sublist in hist_d_id for item in sublist]
 
+hist_d_id = set(hist_d_id)
+
 # create df of hist d_id and event name
 
 hist_events = [*map(get_d_id_event_title, hist_d_id)]
+
+hist_events = pd.DataFrame(hist_events)
+
+### to do: clean the EventName column. Write function to collect results.
