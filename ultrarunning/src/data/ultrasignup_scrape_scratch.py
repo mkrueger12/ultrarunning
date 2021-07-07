@@ -46,17 +46,17 @@ def get_historical_d_id(d_id):
     return d_id_hist
 
 
-def get_d_id_title(d_id):
+def get_d_id_event_title(d_id):
 
     ''' Takes a d_id and gets the event title '''
 
-    print(r.status_code, d_id)
-
     r = requests.get(f'https://ultrasignup.com/results_event.aspx?did={d_id}')
+
+    print(r.status_code, d_id)
 
     html = BeautifulSoup(r.content)
 
-    dict = {'EventName': parsed_html.title, 'EventD_Id': d_id}
+    dict = {'EventName': html.title, 'EventD_Id': d_id}
 
     return dict
 
@@ -90,6 +90,12 @@ d_id_list = pd.DataFrame(d_id_list)
 
 data = pd.merge(data, d_id_list)
 
+# get historical d_id
+
 hist_d_id = [*map(get_historical_d_id, data['did'])]
 
 hist_d_id = [item for sublist in hist_d_id for item in sublist]
+
+# create df of hist d_id and event name
+
+hist_events = [*map(get_d_id_event_title, hist_d_id)]
