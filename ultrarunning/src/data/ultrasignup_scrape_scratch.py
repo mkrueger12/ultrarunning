@@ -135,6 +135,5 @@ hist_events = pd.DataFrame(hist_events)
 
 results = [*map(get_results, hist_events['EventD_Id'], hist_events['EventName'])]
 
-result = pd.concat(results)
-
+results = pd.concat(results)
 
