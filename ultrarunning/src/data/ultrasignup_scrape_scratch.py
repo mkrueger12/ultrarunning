@@ -3,6 +3,7 @@ import numpy as np
 import requests
 from datetime import datetime
 from bs4 import BeautifulSoup
+import re
 
 
 def get_past_events(month):
@@ -56,9 +57,26 @@ def get_d_id_event_title(d_id):
 
     html = BeautifulSoup(r.content)
 
-    dict = {'EventName': html.title, 'EventD_Id': d_id}
+    title = remove_html_tags(str(html.title))
+
+    dict = {'EventName': title, 'EventD_Id': d_id}
 
     return dict
+
+
+def get_results(d_id, event_name):
+
+    r = requests.get(f'https://ultrasignup.com/service/events.svc/results/{d_id}/1/json?_search=false&nd=1625680201306&rows=1500&page=1&sidx=status%20asc%2C%20&sord=asc')
+    r = pd.DataFrame(r.json())
+    r['EventName'] = event_name
+    print(event_name)
+
+
+def remove_html_tags(text):
+    """Remove html tags from a string"""
+
+    clean = re.compile('<.*?>')
+    return re.sub(clean, '', text)
 
 
 # get event data
@@ -105,3 +123,8 @@ hist_events = [*map(get_d_id_event_title, hist_d_id)]
 hist_events = pd.DataFrame(hist_events)
 
 ### to do: clean the EventName column. Write function to collect results.
+
+# get results
+
+results = [*map(get_results, hist_events['EventD_Id'], hist_events['EventName'])]
+
