@@ -1,7 +1,6 @@
-%load_ext line_profiler
+# %load_ext line_profiler
 
 import pandas as pd
-import numpy as np
 import requests
 from datetime import datetime
 from bs4 import BeautifulSoup
@@ -126,7 +125,7 @@ hist_d_id = set(hist_d_id)
 
 # create df of hist d_id and event name
 
-%lprun -f get_d_id_event_title(hist_d_id)
+# %lprun -f get_d_id_event_title(hist_d_id)
 
 hist_events = [*map(get_d_id_event_title, hist_d_id)]
 
@@ -137,9 +136,4 @@ hist_events = pd.DataFrame(hist_events)
 results = [*map(get_results, hist_events['EventD_Id'], hist_events['EventName'])]
 
 result = pd.concat(results)
-
-result['Year'] = result['EventName'].astype(str).str[0:4]
-
-### to do: profile functions
-
 
