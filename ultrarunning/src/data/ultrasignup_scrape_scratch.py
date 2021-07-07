@@ -137,3 +137,4 @@ results = [*map(get_results, hist_events['EventD_Id'], hist_events['EventName'])
 
 result = pd.concat(results)
 
+
