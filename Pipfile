@@ -13,6 +13,8 @@ numpy = "*"
 xlrd = "*"
 requests = "*"
 lxml = "*"
+bs4 = "*"
+beautifulsoup4 = "*"
 
 [requires]
 python_version = "3.8"

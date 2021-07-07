@@ -1,8 +1,8 @@
 import pandas as pd
-import numpy as np
 import requests
-import io
 from datetime import datetime
+from bs4 import BeautifulSoup
+
 
 def get_past_events(month):
 
@@ -16,9 +16,21 @@ def get_d_id(event_date_id):
 
     r = requests.get(f'https://ultrasignup.com/results_event.aspx?dtid={event_date_id}')
     d_id = r.url.split("=", 1)[1]
-    dict = {'event_date_id': event_date_id, 'did': d_id}
+    dict = {'EventDateId': event_date_id, 'did': d_id}
 
     return dict
+
+
+def get_historical_d_id(d_id):
+
+    r = requests.get(f'https://ultrasignup.com/results_event.aspx?did={d_id}')
+
+    parsed_html = BeautifulSoup(r.content)
+
+    for link in parsed_html.find_all('a'):
+        print(link.get('href'))
+
+    parsed_html.title
 
 
 # get event data
@@ -47,3 +59,19 @@ d_id_list = [*map(get_d_id, data['EventDateId'])]
 d_id_list = pd.DataFrame(d_id_list)
 
 # merge d_id into master df
+
+data = pd.merge(data, d_id_list)
+
+
+r = requests.get(f'https://ultrasignup.com/results_event.aspx?did=79446')
+
+parsed_html = BeautifulSoup(r.content)
+
+links = []
+
+for link in parsed_html.find_all('a'):
+    links.append(link.get('href'))
+
+links = pd.DataFrame()
+
+parsed_html.title
