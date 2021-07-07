@@ -12,7 +12,7 @@ def get_past_events(month):
     return data
 
 
-def get_results(event_date_id):
+def get_d_id(event_date_id):
 
     r = requests.get(f'https://ultrasignup.com/results_event.aspx?dtid={event_date_id}')
     d_id = r.url.split("=", 1)[1]
@@ -40,4 +40,10 @@ data = data[data['EventDate'] < datetime.today()]
 data = data[data['Cancelled'] == False]
 data = data[data['VirtualEvent'] == False]
 
+# get event d_ids
 
+d_id_list = [*map(get_d_id, data['EventDateId'])]
+
+d_id_list = pd.DataFrame(d_id_list)
+
+# merge d_id into master df
