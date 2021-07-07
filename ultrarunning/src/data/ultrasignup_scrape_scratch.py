@@ -1,3 +1,5 @@
+%load_ext line_profiler
+
 import pandas as pd
 import numpy as np
 import requests
@@ -59,7 +61,11 @@ def get_d_id_event_title(d_id):
 
     title = remove_html_tags(str(html.title))
 
-    dict = {'EventName': title, 'EventD_Id': d_id}
+    title = title.strip()
+
+    year = title[0:4]
+
+    dict = {'EventName': title, 'EventD_Id': d_id, 'Year': year}
 
     return dict
 
@@ -70,6 +76,8 @@ def get_results(d_id, event_name):
     r = pd.DataFrame(r.json())
     r['EventName'] = event_name
     print(event_name)
+
+    return r
 
 
 def remove_html_tags(text):
@@ -110,7 +118,7 @@ data = pd.merge(data, d_id_list)
 
 # get historical d_id
 
-hist_d_id = [*map(get_historical_d_id, data['did'])]
+hist_d_id = [*map(get_historical_d_id, set(data['did']))]
 
 hist_d_id = [item for sublist in hist_d_id for item in sublist]
 
@@ -118,13 +126,20 @@ hist_d_id = set(hist_d_id)
 
 # create df of hist d_id and event name
 
+%lprun -f get_d_id_event_title(hist_d_id)
+
 hist_events = [*map(get_d_id_event_title, hist_d_id)]
 
 hist_events = pd.DataFrame(hist_events)
 
-### to do: clean the EventName column. Write function to collect results.
-
 # get results
 
 results = [*map(get_results, hist_events['EventD_Id'], hist_events['EventName'])]
+
+result = pd.concat(results)
+
+result['Year'] = result['EventName'].astype(str).str[0:4]
+
+### to do: profile functions
+
 

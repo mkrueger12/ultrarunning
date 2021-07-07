@@ -15,6 +15,7 @@ requests = "*"
 lxml = "*"
 bs4 = "*"
 beautifulsoup4 = "*"
+line-profiler = "*"
 
 [requires]
 python_version = "3.8"
