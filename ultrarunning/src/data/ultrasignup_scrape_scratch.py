@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import requests
 from datetime import datetime
 from bs4 import BeautifulSoup
@@ -25,12 +26,39 @@ def get_historical_d_id(d_id):
 
     r = requests.get(f'https://ultrasignup.com/results_event.aspx?did={d_id}')
 
+    print(r.status_code, d_id)
+
     parsed_html = BeautifulSoup(r.content)
 
-    for link in parsed_html.find_all('a'):
-        print(link.get('href'))
+    links = []
 
-    parsed_html.title
+    for link in parsed_html.find_all('a'):
+        links.append(link.get('href'))
+
+    links = pd.DataFrame(links, columns=['d_id'])
+
+    links = links[links['d_id'].str.contains('did=') == True]
+
+    links = list(links['d_id'].str.split("="))
+
+    d_id_hist = set([el[1] for el in links])  # list of historical d_ids
+
+    return d_id_hist
+
+
+def get_d_id_title(d_id):
+
+    ''' Takes a d_id and gets the event title '''
+
+    print(r.status_code, d_id)
+
+    r = requests.get(f'https://ultrasignup.com/results_event.aspx?did={d_id}')
+
+    html = BeautifulSoup(r.content)
+
+    dict = {'EventName': parsed_html.title, 'EventD_Id': d_id}
+
+    return dict
 
 
 # get event data
@@ -62,16 +90,6 @@ d_id_list = pd.DataFrame(d_id_list)
 
 data = pd.merge(data, d_id_list)
 
+hist_d_id = [*map(get_historical_d_id, data['did'])]
 
-r = requests.get(f'https://ultrasignup.com/results_event.aspx?did=79446')
-
-parsed_html = BeautifulSoup(r.content)
-
-links = []
-
-for link in parsed_html.find_all('a'):
-    links.append(link.get('href'))
-
-links = pd.DataFrame()
-
-parsed_html.title
+hist_d_id = [item for sublist in hist_d_id for item in sublist]
