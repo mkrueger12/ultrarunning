@@ -1,55 +1,148 @@
+# %load_ext line_profiler
+
 import pandas as pd
-import numpy as np
 import requests
-import io
+from datetime import datetime
+from bs4 import BeautifulSoup
+import re
+from ultrarunning.functions import writeToS3
 
 
-def get_eventId(dtid_id):
+def get_past_events(month):
 
-    url = f'https://ultrasignup.com/register.aspx?dtid={dtid_id}'
-    resp = requests.get(url=url)
-    event_id = resp.url[-5:]
-    dict = {'EventDateId': dtid_id, 'EventID': event_id}
-    print('Conversion of', dtid_id, 'to', event_id, 'Completed.')
+    # get event data
+    data = pd.read_json(f'https://ultrasignup.com/service/events.svc/closestevents?virtual=0&open=0&past=1&lat=0&lng=0&mi=500&mo=12&&m={month}&dist=4,5,6')
+
+    return data
+
+
+def get_d_id(event_date_id):
+
+    r = requests.get(f'https://ultrasignup.com/results_event.aspx?dtid={event_date_id}')
+    d_id = r.url.split("=", 1)[1]
+    dict = {'EventDateId': event_date_id, 'did': d_id}
 
     return dict
 
-def get_entrants(data, event_id):
 
-    data = data[['EventDateId', 'EventId', 'EventName', 'EventDate']].drop_duplicates()
-    data = data[data[0] == event_id]
+def get_historical_d_id(d_id):
 
-    resp = requests.get(url=f'https://ultrasignup.com/entrants_event.aspx?did={event_id}')
-    df = pd.read_html(resp.content)
+    r = requests.get(f'https://ultrasignup.com/results_event.aspx?did={d_id}')
 
-    df = pd.DataFrame(df[0])
+    print(r.status_code, d_id)
 
-    df['EventName'] = data[2]
+    parsed_html = BeautifulSoup(r.content)
 
-    df['EventDateId'] = data[0]
+    links = []
 
-    df['EventId'] = data[1]
+    for link in parsed_html.find_all('a'):
+        links.append(link.get('href'))
 
-    df['EventDate'] = data[3]
+    links = pd.DataFrame(links, columns=['d_id'])
 
-    return df
+    links = links[links['d_id'].str.contains('did=') == True]
 
-#scrape data
-url = 'https://ultrasignup.com/service/events.svc/closestevents?virtual=0&open=1&past=0&lat=0&lng=0&mi=500&mo=12&&m=1&dist=3,4,5,6,7'
+    links = list(links['d_id'].str.split("="))
+
+    d_id_hist = set([el[1] for el in links])  # list of historical d_ids
+
+    return d_id_hist
 
 
-resp = requests.get(url=url)
-data = resp.json()  # Check the JSON Response Content documentation below
+def get_d_id_event_title(d_id):
 
-event_data = pd.DataFrame(data)
+    ''' Takes a d_id and gets the event title '''
 
-# get eventId
-event_id = [*map(get_eventId, event_data['EventDateId'])]
-event_id = pd.DataFrame(event_id)
-data = pd.merge(event_id, event_data)
+    r = requests.get(f'https://ultrasignup.com/results_event.aspx?did={d_id}')
 
-event_data.reset_index(inplace=True)
+    print(r.status_code, d_id)
 
-# get entrant list
-event_id = [*map(get_entrants, event_data, data['EventID'])]
+    html = BeautifulSoup(r.content)
+
+    title = remove_html_tags(str(html.title))
+
+    title = title.strip()
+
+    year = title[0:4]
+
+    dict = {'EventName': title, 'EventD_Id': d_id, 'Year': year}
+
+    return dict
+
+
+def get_results(d_id, event_name):
+
+    r = requests.get(f'https://ultrasignup.com/service/events.svc/results/{d_id}/1/json?_search=false&nd=1625680201306&rows=1500&page=1&sidx=status%20asc%2C%20&sord=asc')
+    r = pd.DataFrame(r.json())
+    r['EventName'] = event_name
+    print(event_name)
+
+    return r
+
+
+def remove_html_tags(text):
+    """Remove html tags from a string"""
+
+    clean = re.compile('<.*?>')
+    return re.sub(clean, '', text)
+
+
+# get event data
+
+month = [*range(1, 7)]
+
+data = [*map(get_past_events, month)]
+
+data = pd.concat(data)
+
+data.reset_index(inplace=True, drop=True)
+
+# filter event data
+
+data['EventDate'] = pd.to_datetime(data['EventDate'])
+
+data = data[data['EventDate'] < datetime.today()]
+
+data = data[data['Cancelled'] == False]
+data = data[data['VirtualEvent'] == False]
+
+# get event d_ids
+
+d_id_list = [*map(get_d_id, data['EventDateId'])]
+
+d_id_list = pd.DataFrame(d_id_list)
+
+# merge d_id into master df
+
+data = pd.merge(data, d_id_list)
+
+# get historical d_id
+
+hist_d_id = [*map(get_historical_d_id, set(data['did']))]
+
+hist_d_id = [item for sublist in hist_d_id for item in sublist]
+
+hist_d_id = set(hist_d_id)
+
+# create df of hist d_id and event name
+
+# %lprun -f get_d_id_event_title(hist_d_id)
+
+hist_events = [*map(get_d_id_event_title, hist_d_id)]
+
+hist_events = pd.DataFrame(hist_events)
+
+# get results
+
+results = [*map(get_results, hist_events['EventD_Id'], hist_events['EventName'])]
+
+results = pd.concat(results)
+
+# add year column
+
+results['year'] = results['EventName'].str[0:4]
+
+# write to s3
+
+writeToS3(data=results, bucket_name='ultrastats', bucket_folder='raw/results', filename='results.csv')
 
