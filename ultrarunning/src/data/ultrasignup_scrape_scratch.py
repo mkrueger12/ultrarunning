@@ -5,6 +5,7 @@ import requests
 from datetime import datetime
 from bs4 import BeautifulSoup
 import re
+from ultrarunning.functions import writeToS3
 
 
 def get_past_events(month):
@@ -136,4 +137,8 @@ hist_events = pd.DataFrame(hist_events)
 results = [*map(get_results, hist_events['EventD_Id'], hist_events['EventName'])]
 
 results = pd.concat(results)
+
+# write to s3
+
+writeToS3(data=results, bucket_name='ultrastats', bucket_folder='raw/results', filename='results.csv')
 
