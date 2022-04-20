@@ -5,7 +5,11 @@ import requests
 from datetime import datetime
 from bs4 import BeautifulSoup
 import re
-from ultrarunning.functions import writeToS3
+import os
+from google.cloud import storage
+
+client = storage.Client()
+#bucket = client.get_bucket('ultrarunning')
 
 
 def get_past_events(month):
@@ -142,7 +146,9 @@ results = pd.concat(results)
 
 results['year'] = results['EventName'].str[0:4]
 
-# write to s3
+# write to gcp
 
-writeToS3(data=results, bucket_name='ultrastats', bucket_folder='raw/results', filename='results.csv')
+results.to_csv('gs://ultrarunning')
+
+
 
