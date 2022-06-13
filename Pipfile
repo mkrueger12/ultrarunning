@@ -17,6 +17,11 @@ bs4 = "*"
 beautifulsoup4 = "*"
 line-profiler = "*"
 boto3 = "*"
+google-cloud = "*"
+fsspec = "*"
+google-cloud-storage = "*"
+html5lib = "*"
+install = "*"
 
 [requires]
 python_version = "3.8"
